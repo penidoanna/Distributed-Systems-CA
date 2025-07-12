@@ -8,15 +8,47 @@ import smartcity.airquality.AirQualityServiceGrpc.AirQualityServiceStub;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import java.util.concurrent.CountDownLatch;
 
 public class AirQualityClient {
     
     private static final Logger logger = Logger.getLogger(AirQualityClient.class.getName()); //creating a logger to print the message to the console
-
+    
     public static void main(String[] args) throws Exception {
+       String host = "localhost";
+       int port = 50051; //default port for gRPC
+       
+       ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+               .usePlaintext()
+               .build();
+       
+        AirQualityServiceGrpc.AirQualityServiceStub asyncStub = AirQualityServiceGrpc.newStub(channel);
+        
+        CountDownLatch latch = new CountDownLatch(1);
+        
+        
 
-    } //closes main method
-} //closes class
-
+        
+        AirQualityClient client = new AirQualityClient();
+        
+        try {
+            String[] zones = {"Z1", "Z2", "Z3"};
+            for (String zone_id : zones){
+                AQRequest request = AQRequest.newBuilder()
+                        .setZoneId(zone_id)
+                        .build();
+                requestObserver.onNext(request);
+                Thread.sleep(1000); // simulate time delay
+            }
+            AQRequest request = AQRequest.newBuilder().setName(zone_id).build();
+            AQResponse response = blockingStub.MonitorAirQuality(request);
+            logger.info("The air quality at the moment is ", e.getStatus());
+            
+        } catch (StatusRuntimeException e){
+            logger.log(Level.WARNING, "RPC failed (0)", e.getStatus());
+        }
+    }
+    
+}
 
 
