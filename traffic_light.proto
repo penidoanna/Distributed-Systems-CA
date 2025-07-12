@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "smartcity.traffic";
+option java_outer_classname = "TrafficLightServiceProto";
+
+package traffic;
+
+service TrafficLightService {
+  rpc GetLightStatus (LightStatusRequest) returns (LightStatusResponse);
+  rpc StreamTrafficUpdates (ZoneRequest) returns (stream TrafficUpdate);
+}
+
+message LightStatusRequest {
+  string intersection_id = 1;
+}
+
+message LightStatusResponse {
+  string status = 1;
+  string direction = 2;
+}
+
+message ZoneRequest {
+  string zone_id = 1;
+}
+
+message TrafficUpdate {
+  string intersection_id = 1;
+  string status = 2;
+}
