@@ -8,6 +8,7 @@ import smartcity.airquality.AirQualityServiceGrpc.AirQualityServiceStub;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CountDownLatch;
 
 public class AirQualityClient {
@@ -26,17 +27,37 @@ public class AirQualityClient {
         
         CountDownLatch latch = new CountDownLatch(1);
         
-        
+        StreamObserver<AQResponse> responseObserver = new StreamObserver<AQResponse>(){
+           @Override
+           public void onNext(AQResponse value) {
+               System.out.println("Air Quality in Selected Zone is " + response.getAqi() + ", Status = " + response.getStatus());
+           }
 
+           @Override
+           public void onError(Throwable t) {
+               logger.warning("Error receiving stream: " + t.getMessage());
+               latch.countDown();
+           }
+
+           @Override
+           public void onCompleted() {
+               logger.info("Stream ended by server.");
+               latch.countDown();
+           }
+        }; //closes responseObserver
+        
         
         AirQualityClient client = new AirQualityClient();
         
         try {
-            String[] zones = {"Z1", "Z2", "Z3"};
+            String[] zones = {"Z1", "Z2", "Z3"}; //sending this array to the server
             for (String zone_id : zones){
                 AQRequest request = AQRequest.newBuilder()
                         .setZoneId(zone_id)
                         .build();
+                
+                
+                
                 requestObserver.onNext(request);
                 Thread.sleep(1000); // simulate time delay
             }
@@ -46,9 +67,12 @@ public class AirQualityClient {
             
         } catch (StatusRuntimeException e){
             logger.log(Level.WARNING, "RPC failed (0)", e.getStatus());
+            
+            return;
+            
+        } finally {
+            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
         }
     }
     
 }
-
-
