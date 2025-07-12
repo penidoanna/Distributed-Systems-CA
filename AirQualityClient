@@ -1,0 +1,22 @@
+package smartcity.airquality;
+
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import smartcity.airquality.AirQualityServiceGrpc.AirQualityServiceStub;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
+
+public class AirQualityClient {
+    
+    private static final Logger logger = Logger.getLogger(AirQualityClient.class.getName()); //creating a logger to print the message to the console
+
+    public static void main(String[] args) throws Exception {
+
+    } //closes main method
+} //closes class
+
+
+
