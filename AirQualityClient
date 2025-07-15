@@ -1,10 +1,10 @@
-package smartcity.airquality;
+package smartcityconnect2.airquality;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import smartcity.airquality.AirQualityServiceGrpc.AirQualityServiceStub;
+import smartcityconnect2.airquality.AirQualityServiceGrpc.AirQualityServiceStub;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -12,61 +12,69 @@ import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CountDownLatch;
 
 public class AirQualityClient {
-    
+
     private static final Logger logger = Logger.getLogger(AirQualityClient.class.getName()); //creating a logger to print the message to the console
-    
+
     public static void main(String[] args) throws Exception {
-       String host = "localhost";
-       int port = 50051; //default port for gRPC
-       
-       ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-               .usePlaintext()
-               .build();
-       
+        String host = "localhost";
+        int port = 50051; //default port for gRPC
+
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+                .usePlaintext()
+                .build();
+
         AirQualityServiceGrpc.AirQualityServiceStub asyncStub = AirQualityServiceGrpc.newStub(channel);
-        
+
         CountDownLatch latch = new CountDownLatch(1);
-        
+
         StreamObserver<AQRequest> requestObserver = asyncStub.monitorAirQuality(new StreamObserver<AQResponse>() {
-            
-           @Override
-           public void onNext(AQResponse response) {
-               System.out.println("Air Quality in Selected Zone is " + response.getAqi() + ", Status = " + response.getStatus());
-           }
 
-           @Override
-           public void onError(Throwable t) {
-               logger.warning("Error receiving stream: " + t.getMessage());
-               latch.countDown();
-           }
+            @Override
+            public void onNext(AQResponse response) {
+                System.out.println("Air Quality in Selected Zone is " + response.getAqi() + ", Status = " + response.getStatus());
+            }
 
-           @Override
-           public void onCompleted() {
-               logger.info("Stream ended by server.");
-               latch.countDown();
-           } //closes onCompleted
-        });  //closes request Observer
-              
+            @Override
+            public void onError(Throwable t) {
+                logger.warning("Error receiving stream: " + t.getMessage());
+                latch.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                logger.info("Stream ended by server.");
+                latch.countDown();
+                //closes onCompleted
+            }
+        }); //closes request Observer
+
         try {
-            String[] zones = {"Z1", "Z2", "Z3"}; //sending this array to the server
-            for (String zone_id : zones){
+            String[] zones = {"Z1", "Z2", "Z3", "Z4"};
+            for (String zoneId : zones) { //for each zone in the array, do the loop
                 AQRequest request = AQRequest.newBuilder()
-                        .setZoneId(zone_id)
+                        .setZoneId(zoneId)
                         .build();
-                
+
                 requestObserver.onNext(request);
-                     
-                Thread.sleep(1000); // simulate time delay
+                Thread.sleep(1000); // Delay between requests
             }
             
+            // Signal completion
+            requestObserver.onCompleted();
             
+            // Wait for server to complete
+            latch.await();
+
         } catch (StatusRuntimeException e){
             logger.log(Level.WARNING, "RPC failed (0)", e.getStatus());
-            
             
         } finally {
             channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
         }
-    }
+        
+    } //closes main method
     
-}
+} //closes class
+    
+
+
