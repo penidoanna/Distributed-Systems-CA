@@ -1,36 +1,48 @@
-package smartcity.airquality;
+package smartcityconnect2.airquality;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import java.io.IOException;
 import java.util.logging.Logger;
-import smartcity.airquality.AirQualityServiceGrpc.AirQualityServiceImplBase;
+import smartcityconnect2.airquality.AirQualityServiceGrpc.AirQualityServiceImplBase;
 import io.grpc.stub.StreamObserver;
 
 public class AirQualityServer extends AirQualityServiceImplBase {
     
     private static final Logger logger = Logger.getLogger(AirQualityServer.class.getName()); //creating a logger to print the message to the console
 
-    public static void main(String[] args) {
-        
-        AirQualityServer aqserver = new AirQualityServer();
+    public static void main(String[] args) throws IOException, InterruptedException {
         
         int port = 50051;
+        AirQualityServer server = new AirQualityServer();
         
+        Server grpcServer = ServerBuilder.forPort(port)
+            .addService(server)
+            .build()
+            .start();
+        
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("Shutting down gRPC server");
+            grpcServer.shutdown();
+        })
+        );
+        
+        logger.info("Server started, listening on " + port);
+        grpcServer.awaitTermination();
+    }
+                
         try {
             Server server = ServerBuilder.forPort(port) //starts building the server on the default port
 			    .addService(aqserver) //register our server implementation
 			    .build()   //finalizes the server
 			    .start();  //launches the server so it can start getting requests
-			
+	
+            logger.info("Server started, listening on " + port); //message that will print once server has started running
             server.awaitTermination();  //keeps the server on awaiting requests, otherwise it would shut down
-                        
-        } catch (IOException | InterruptedException e) {
+        }      
+        catch (IOException | InterruptedException e) {
             e.printStackTrace();   
-        }
-        
-        logger.info("Server started, listening on " + port); //message that will print once server has started running
-    } //closes main method
+        }    
     
         @Override
         public StreamObserver<AQRequest> monitorAirQuality(StreamObserver<AQResponse> responseObserver){
@@ -61,4 +73,6 @@ public class AirQualityServer extends AirQualityServiceImplBase {
             };
         } //closes Monitor Air Quality
         
-    } //closes class
+    } //closes main class
+    
+} //closes class
