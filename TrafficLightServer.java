@@ -1,35 +1,33 @@
-package smartcity.traffic;
+package smartcityconnect2.traffic;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import java.io.IOException;
-import java.util.logging.Logger;
-import smartcity.traffic.TrafficLightServiceGrpc.TrafficLightServiceImplBase;
 import io.grpc.stub.StreamObserver;
+import java.util.logging.Logger;
+import smartcityconnect2.traffic.TrafficLightServiceGrpc.TrafficLightServiceImplBase;
 
 public class TrafficLightServer extends TrafficLightServiceImplBase{
     
         private static final Logger logger = Logger.getLogger(TrafficLightServer.class.getName()); //creating a logger to print the message to the console
 
-        TrafficLightServer trafficserver = new TrafficLightServer();
-        
+        public static void main(String[] args) throws IOException, InterruptedException {
+               
         int port = 50051;
-        
-        try {
-            Server server = ServerBuilder.forPort(port) //starts building the server on the default port
-			          .addService(trafficserver) //register our server implementation
-			          .build()   //finalizes the server
-      			    .start();  //launches the server so it can start getting requests
-			
-            server.awaitTermination();  //keeps the server on awaiting requests, otherwise it would shut down
-                        
-        } catch (IOException e) {
-            e.printStackTrace();
             
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        Server server = ServerBuilder.forPort(port) //starts building the server on the default port
+			    .addService(new TrafficLightServer()) //register our server implementation
+			    .build()   //finalizes the server
+			    .start();  //launches the server so it can start getting requests
+			                       
+        logger.info("Server started, listening on " + port);
         
-        logger.info("Server started, listening on " + port); //message that will print once server has started running
-        
-    } //closes class
+         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("Shutting down gRPC server");
+            server.shutdown();
+        })
+         );
+                 
+        server.awaitTermination();
+        } //main class
+} //closes class
