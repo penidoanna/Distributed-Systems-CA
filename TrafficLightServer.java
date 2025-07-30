@@ -49,16 +49,18 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
             status = "Unknown";
             direction = "Unknown";
         }
-    } //getLightStatus
-
-    LightStatusResponse response = LightStatusResponse.newBuilder()
-            .setStatus(status)
-            .setDirection(direction)
-            .build();
+ 
+        LightStatusResponse response = LightStatusResponse.newBuilder()
+                .setStatus(status)
+                .setDirection(direction)
+                .build();
 
     responseObserver.onNext (response);
     responseObserver.onCompleted ();
-
+    
+    } //getLightStatus
+    
+    
     @Override
     public void streamTrafficUpdates(ZoneRequest request, StreamObserver<TrafficUpdate> responseObserver) {
 
