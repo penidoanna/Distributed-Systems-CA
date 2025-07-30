@@ -13,9 +13,9 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        TrafficLightServer trafficServer = new TrafficLightServer();
+        TrafficLightServer trafficServer = new TrafficLightServer(); //create an instance of the server class to register it to the gRPC
 
-        int port = 50051;
+        int port = 50051; //default port
 
         Server server = ServerBuilder.forPort(port) //starts building the server on the default port
                 .addService(trafficServer) //register our server implementation
@@ -24,18 +24,15 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
 
         logger.info("Server started, listening on " + port);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutting down gRPC server");
-            server.shutdown();
-        }));
+        server.awaitTermination();  //keeps the server on awaiting requests, otherwise it would shut down
 
-        server.awaitTermination();
     } //main class
 
     @Override
-    public void getLightStatus(LightStatusRequest request, StreamObserver<LightStatusResponse> responseObserver) {
+    //Method that will be automatically invoked when client is sending a LightStatus request
+    public void getLightStatus(LightStatusRequest request, StreamObserver<LightStatusResponse> responseObserver) { //StreamObserver sends the reply back to the client
 
-        logger.info("GetLightStatus request received for intersection: " + request.getIntersectionId());
+        logger.info("GetLightStatus request received for intersection: " + request.getIntersectionId()); //debug print saying the server got the request
 
         String status, direction = "";
 
@@ -50,13 +47,14 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
             direction = "Unknown";
         }
  
-        LightStatusResponse response = LightStatusResponse.newBuilder()
+        LightStatusResponse response = LightStatusResponse
+                .newBuilder() 
                 .setStatus(status)
                 .setDirection(direction)
                 .build();
 
-    responseObserver.onNext (response);
-    responseObserver.onCompleted ();
+    responseObserver.onNext (response); //Send the reply created back to the client
+    responseObserver.onCompleted (); //Response is complete and no further messages will follow
     
     } //getLightStatus
     
@@ -68,13 +66,14 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
 
         try {
             for (int i = 0; i < 3; i++) { //send 3 updates
-                TrafficUpdate update = TrafficUpdate.newBuilder()
+                TrafficUpdate update = TrafficUpdate
+                        .newBuilder()
                         .setIntersectionId(request.getZoneId())
-                        .setStatus(i % 2 == 0 ? "Heavy Traffic" : "Light Traffic")
+                        .setStatus(i % 2 == 0 ? "Heavy Traffic" : "Light Traffic") //Alternating patterns to examplify. 
                         .build();
 
-                responseObserver.onNext(update);
-                Thread.sleep(1000); // Simulate delay between updates
+                responseObserver.onNext(update); //Send the reply created back to the client
+                Thread.sleep(100); // Simulate delay between updates
             } //for loop
         } catch (InterruptedException e) {
             logger.warning("Server streaming interrupted: " + e.getMessage());
