@@ -16,7 +16,7 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
         
         PublicTransportServiceServer publicTransportServer = new PublicTransportServiceServer();
         
-        int port = 50051;
+        int port = 50051; //Default port
         
         Server server = ServerBuilder.forPort(port) //starts building the server on the default port
                 .addService(publicTransportServer) //register our server implementation
@@ -24,16 +24,10 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
                 .start();  //launches the server so it can start getting requests
 			
             logger.info("Server started, listening on " + port);
-                        
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutting down gRPC server");
-            server.shutdown();
-        }));
-        
+                               
         server.awaitTermination();
     } //main class
   
-
     @Override
     public StreamObserver<CrowdReport> sendCrowdReports(final StreamObserver<CrowdSummary> responseObserver) {
         return new StreamObserver<CrowdReport>() {
@@ -42,8 +36,8 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
 
             @Override
             public void onNext(CrowdReport request) {
-                logger.info("Received CrowdReport from stop number: " + request.getStopNum() + ", count: " + request.getCount());
-                totalCrowdCount += request.getCount();
+                logger.info("Received CrowdReport from stop number: " + request.getStopNum() + ", count: " + request.getCount()); 
+                totalCrowdCount += request.getCount(); //Process each request and send a response
                 reportCount++;
             }
 
@@ -69,7 +63,8 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
                     }
                 }
                 logger.info("SendCrowdReports completed. Overall status: " + overallStatus);
-                CrowdSummary summary = CrowdSummary.newBuilder()
+                CrowdSummary summary = CrowdSummary
+                        .newBuilder()
                         .setOverallStatus(overallStatus)
                         .build();
                 
