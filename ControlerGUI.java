@@ -1,4 +1,4 @@
-package smartcity.client;
+package smartcityconnect2.client;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -14,12 +14,11 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import smartcity.airquality.AirQualityServiceGrpc;
-import smartcity.traffic.TrafficLightServiceGrpc;
-import smartcity.transport.PublicTransportServiceGrpc;
+import smartcityconnect2.airquality.AirQualityServiceGrpc;
+import smartcityconnect2.traffic.TrafficLightServiceGrpc;
+import smartcityconnect2.transport.PublicTransportServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-
 
 public class ControllerGUI implements ActionListener{
 
@@ -27,7 +26,6 @@ public class ControllerGUI implements ActionListener{
 	private JTextField entry1, reply1;
 	private JTextField entry2, reply2;
 	private JTextField entry3, reply3;
-	private JTextField entry4, reply4;
 
 
 	private JPanel getAirQualityServiceJPanel() {
@@ -36,14 +34,14 @@ public class ControllerGUI implements ActionListener{
 
 		BoxLayout boxlayout = new BoxLayout(panel, BoxLayout.X_AXIS);
 
-		JLabel label = new JLabel("Enter Zone ID")	;
+		JLabel label = new JLabel("Enter Zone Id")	;
 		panel.add(label);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
 		entry1 = new JTextField("",10);
 		panel.add(entry1);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-		JButton button = new JButton("Get Air Quality");
+		JButton button = new JButton("Invoke Service 1");
 		button.addActionListener(this);
 		panel.add(button);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -64,14 +62,14 @@ public class ControllerGUI implements ActionListener{
 
 		BoxLayout boxlayout = new BoxLayout(panel, BoxLayout.X_AXIS);
 
-		JLabel label = new JLabel("Enter Zone ID")	;
+		JLabel label = new JLabel("Enter value")	;
 		panel.add(label);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
 		entry2 = new JTextField("",10);
 		panel.add(entry2);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-		JButton button = new JButton("Get Traffic Light Status");
+		JButton button = new JButton("Invoke Service 2");
 		button.addActionListener(this);
 		panel.add(button);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -92,14 +90,14 @@ public class ControllerGUI implements ActionListener{
 
 		BoxLayout boxlayout = new BoxLayout(panel, BoxLayout.X_AXIS);
 
-		JLabel label = new JLabel("Enter Bus Stop number")	;
+		JLabel label = new JLabel("Enter value")	;
 		panel.add(label);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
 		entry3 = new JTextField("",10);
 		panel.add(entry3);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-		JButton button = new JButton("Get crowd report");
+		JButton button = new JButton("Invoke Service 3");
 		button.addActionListener(this);
 		panel.add(button);
 		panel.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -137,9 +135,9 @@ public class ControllerGUI implements ActionListener{
 		// Set border for the panel
 		panel.setBorder(new EmptyBorder(new Insets(50, 100, 50, 100)));
 	
-		panel.add( getAirQualityServiceJPanel() );
-		panel.add( getTrafficLightServiceJPanel() );
-		panel.add( getPublicTransportServiceJPanel() );
+		panel.add(getAirQualityServiceJPanel());
+		panel.add(getTrafficLightServiceJPanel());
+		panel.add(getPublicTransportServiceJPanel());
 
 		// Set size for the frame
 		frame.setSize(300, 300);
@@ -156,52 +154,84 @@ public class ControllerGUI implements ActionListener{
 		JButton button = (JButton)e.getSource();
 		String label = button.getActionCommand();  
 
-		if (label.equals("Get Air Quality")) {
-			System.out.println("Get Air Quality to be invoked ...");
-                        
+		if (label.equals("Invoke Service 1")) {
+			System.out.println("service 1 to be invoked ...");
+
+		
+			/*
+			 * 
+			 */
 			ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051).usePlaintext().build();
-                        AirQualityServiceGrpc.AirQualityServiceStub asyncStub = AirQualityServiceGrpc.newStub(channel);
+			Service1Grpc.Service1BlockingStub blockingStub = Service1Grpc.newBlockingStub(channel);
 
 			//preparing message to send
-			smartcity.airquality.AQRequest request = smartcity.airquality.AQRequest.newBuilder().setText(entry1.getText()).build();
+			ds.service1.RequestMessage request = ds.service1.RequestMessage.newBuilder().setText(entry1.getText()).build();
 
 			//retreving reply from service
-			smartcity.airquality.AQResponse response = asyncStub.AirQualityServiceDo(request);
+			ds.service1.ResponseMessage response = blockingStub.service1Do(request);
 
 			reply1.setText( String.valueOf( response.getLength()) );
 		
-		}else if (label.equals("Get Traffic Light Status")) {
-			System.out.println("Traffic Light status to be invoked ...");
+		}else if (label.equals("Invoke Service 2")) {
+			System.out.println("service 2 to be invoked ...");
 
+		
+			/*
+			 * 
+			 */
 			ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50052).usePlaintext().build();
-			TrafficLightServiceGrpc.TrafficLightServiceStub asyncStub = TrafficLightServiceGrpc.newStub(channel);
+			Service2Grpc.Service2BlockingStub blockingStub = Service2Grpc.newBlockingStub(channel);
 
 			//preparing message to send
-			smartcity.traffic.LightStatusRequest request = smartcity.traffic.LightStatusRequest.newBuilder().setText(entry2.getText()).build();
+			ds.service2.RequestMessage request = ds.service2.RequestMessage.newBuilder().setText(entry2.getText()).build();
 
 			//retreving reply from service
-			smartcity.traffic.LightStatusResponse response = asyncStub.TrafficLightDo(request);
+			ds.service2.ResponseMessage response = blockingStub.service2Do(request);
 
 			reply2.setText( String.valueOf( response.getLength()) );
 			
-		}else if (label.equals("Get crowd report")) {
-			System.out.println("Crowd report to be invoked ...");
+		}else if (label.equals("Invoke Service 3")) {
+			System.out.println("service 3 to be invoked ...");
 
+		
+			/*
+			 * 
+			 */
 			ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50053).usePlaintext().build();
-			PublicTransportServiceGrpc.PublicTransportServiceStub asyncStub = PublicTransportServiceGrpc.newStub(channel);
+			Service3Grpc.Service3BlockingStub blockingStub = Service3Grpc.newBlockingStub(channel);
 
 			//preparing message to send
-			smartcity.transport.CrowdReport request = smartcity.transport.CrowdReport.newBuilder().setText(entry3.getText()).build();
+			ds.service3.RequestMessage request = ds.service3.RequestMessage.newBuilder().setText(entry3.getText()).build();
 
 			//retreving reply from service
-			smartcity.transport.CrowdSummary response = asyncStub.PublicTransportServiceDo(request);
+			ds.service3.ResponseMessage response = blockingStub.service3Do(request);
 
 			reply3.setText( String.valueOf( response.getLength()) );
 		
-		} else {
+		}else if (label.equals("Invoke Service 4")) {
+			System.out.println("service 4 to be invoked ...");
+
+		
+			/*
+			 * 
+			 */
+			ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50054).usePlaintext().build();
+			Service4Grpc.Service4BlockingStub blockingStub = Service4Grpc.newBlockingStub(channel);
+
+			//preparing message to send
+			ds.service4.RequestMessage request = ds.service4.RequestMessage.newBuilder().setText(entry4.getText()).build();
+
+			//retreving reply from service
+			ds.service4.ResponseMessage response = blockingStub.service4Do(request);
+
+			reply4.setText( String.valueOf( response.getLength()) );
+		
+		}else{
 			
 		}
 
 	}
+
+}
 
 }
