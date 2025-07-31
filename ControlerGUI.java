@@ -225,9 +225,22 @@ public class ControllerGUI implements ActionListener {
                     }
                 });
                 
+                AQRequest request = AQRequest //Send request
+                        .newBuilder()
+                        .setZoneId(entry1.getText())
+                        .build();
+                requestObserver.onNext(request);
+                requestObserver.onCompleted();
                 
-                ////////////////////////////////////////////////////////////////////////////
-                    
+                if(!latch.await(10, TimeUnit.SECONDS)){
+                    SwingUtilities.invokeLater(() ->reply1.setText("Timeout"));
+                }
+                
+            } catch (Exception ex){
+                logger.log(Level.SEVERE, "Error invoking Air Quality Service", ex);
+                SwingUtilities.invokeLater(() -> reply1.setText("Error: " + ex.getMessage()));
+            }   
+        } //invokeAirQualityService
                         
             ManagedChannel channel = ManagedChannelBuilder
                     .forAddress("localhost", 50051)
