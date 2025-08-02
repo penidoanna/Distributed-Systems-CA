@@ -304,8 +304,13 @@ public class ControllerGUI implements ActionListener {
         try {
             PublicTransportServiceGrpc.PublicTransportServiceStub asyncStub = PublicTransportServiceGrpc.newStub(publicTransportChannel);
             CountDownLatch latch = new CountDownLatch(1);
+            
+            CrowdReport request = CrowdReport
+                    .newBuilder()
+                    .setStopNum(stopNum)
+                    .build();
 
-            StreamObserver<CrowdReport> requestObserver = asyncStub.sendCrowdReports(new StreamObserver<CrowdSummary>() {
+            asyncStub.sendCrowdReports(request, new StreamObserver<CrowdSummary>() {
 
                 @Override
                 public void onNext(CrowdSummary summary) {
@@ -324,13 +329,6 @@ public class ControllerGUI implements ActionListener {
                     latch.countDown();
                 }
             });
-
-            CrowdReport request = CrowdReport //Send request
-                    .newBuilder()
-                    .setStopNum(entry3.getText())
-                    .build();
-            requestObserver.onNext(request);
-            requestObserver.onCompleted();
 
             //Waiting for a response
             if (!latch.await(10, TimeUnit.SECONDS)) {
