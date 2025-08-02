@@ -8,7 +8,6 @@ import smartcityconnect2.transport.PublicTransportServiceGrpc.PublicTransportSer
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import java.util.concurrent.CountDownLatch;
 
 public class PublicTransportServiceClient {
     
@@ -36,9 +35,13 @@ public class PublicTransportServiceClient {
     private static void sendCrowdReports(PublicTransportServiceStub asyncStub) {
         logger.info("sendCrowdReports request received");
         
-        final CountDownLatch latch = new CountDownLatch(1);
-         // Handling the stream from server using onNext (logic for handling each message in stream), onError, onCompleted (logic will be executed after the completion of stream)
-         StreamObserver<CrowdReport> requestObserver = asyncStub.sendCrowdReports(new StreamObserver<CrowdSummary>() { 
+        //Unary request
+        CrowdReport request = CrowdReport
+                .newBuilder()
+                .setStopNum("001")
+                .build();
+     
+        asyncStub.sendCrowdReports(request, new StreamObserver<CrowdSummary>() {
             @Override
             public void onNext(CrowdSummary summary) {
                 logger.info("Crowd Report: " + summary.getOverallStatus());
@@ -47,49 +50,13 @@ public class PublicTransportServiceClient {
             @Override
             public void onError(Throwable t) {
                 logger.log(Level.WARNING, "sendCrowdReports request failed", t.getMessage());
-                latch.countDown();
             }
 
             @Override
             public void onCompleted() {
                 logger.info("sendCrowdReports completed");
-                latch.countDown();
             }      
          });
-         
-         try {
-             CrowdReport example1 = CrowdReport // Creating a request message.
-                     .newBuilder()
-                     .setStopNum("001")
-                     .build();
-                
-                requestObserver.onNext(example1);
-                Thread.sleep(500); // simulate time delay
-                
-                CrowdReport example2 = CrowdReport
-                     .newBuilder()
-                     .setStopNum("002")
-                     .build();
-                
-                requestObserver.onNext(example2);
-                Thread.sleep(500); // simulate time delay
-                
-                CrowdReport example3 = CrowdReport
-                     .newBuilder()
-                     .setStopNum("003")
-                     .build();
-                
-                requestObserver.onNext(example3);
-                Thread.sleep(500); // simulate time delay
-                
-                requestObserver.onCompleted(); //End of requests
-                        
-        } catch (RuntimeException e){
-            requestObserver.onError(e);
-        } catch (InterruptedException e) {
-            logger.log(Level.WARNING, "sendCrowdReports request interrupted", e.getMessage()); // TODO Auto-generated catch block
-            requestObserver.onError(e);
-        }       
     } //closes sendCrowdReports
     
 } //closes class
