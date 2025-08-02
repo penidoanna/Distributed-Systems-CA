@@ -15,7 +15,7 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
 
         TrafficLightServer trafficServer = new TrafficLightServer(); //create an instance of the server class to register it to the gRPC
 
-        int port = 50051; //default port
+        int port = 50053; //default port
 
         Server server = ServerBuilder.forPort(port) //starts building the server on the default port
                 .addService(trafficServer) //register our server implementation
