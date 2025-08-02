@@ -8,71 +8,49 @@ import io.grpc.stub.StreamObserver;
 import smartcityconnect2.transport.PublicTransportServiceGrpc.PublicTransportServiceImplBase;
 import io.grpc.stub.StreamObserver;
 
-public class PublicTransportServiceServer extends PublicTransportServiceImplBase{
-    
-        private static final Logger logger = Logger.getLogger(PublicTransportServiceServer.class.getName()); //creating a logger to print the message to the console
+public class PublicTransportServiceServer extends PublicTransportServiceImplBase {
 
-        public static void main(String[] args) throws IOException, InterruptedException {
-        
+    private static final Logger logger = Logger.getLogger(PublicTransportServiceServer.class.getName()); //creating a logger to print the message to the console
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+
         PublicTransportServiceServer publicTransportServer = new PublicTransportServiceServer();
-        
+
         int port = 50051; //Default port
-        
+
         Server server = ServerBuilder.forPort(port) //starts building the server on the default port
                 .addService(publicTransportServer) //register our server implementation
-                .build()   //finalizes the server
+                .build() //finalizes the server
                 .start();  //launches the server so it can start getting requests
-			
-            logger.info("Server started, listening on " + port);
-                               
+
+        logger.info("Server started, listening on " + port);
+
         server.awaitTermination();
     } //main class
-  
+
     @Override
-    public StreamObserver<CrowdReport> sendCrowdReports(StreamObserver<CrowdSummary> responseObserver) {
-        return new StreamObserver<CrowdReport>() {
-            
-            private int totalCrowdCount, reportCount = 0;
+    public void sendCrowdReports(CrowdReport request, StreamObserver<CrowdSummary> responseObserver) {
 
-            @Override
-            public void onNext(CrowdReport request) {
-                int simcount = (int)(Math.random() * 100); //random crowd count
-                totalCrowdCount += simcount; //Process each request and send a response
-                reportCount++;
-                logger.info("Received CrowdReport from stop number: " + request.getStopNum() + ", count: " + simcount); 
-            }
+        int simcount = (int) (Math.random() * 100); //random crowd count
+        String status;
 
-            @Override
-            public void onError(Throwable t) {
-                logger.warning("Error in SendCrowdReports: " + t.getMessage());
-                responseObserver.onError(t);
-            }
+        if (simcount == 0) {
+            status = "Nobody's there.";
+        } else if (simcount > 50) {
+            status = "Very crowded";
+        } else if (simcount > 20) {
+            status = "Moderate crowd";
+        } else {
+            status = "Low crowd";
+        }
 
-            @Override
-            public void onCompleted() {
-                String overallStatus;
-                if (reportCount == 0) {
-                    overallStatus = "Nobody's there.";
-                } else {
-                    int averageCrowd = totalCrowdCount / reportCount;
-                    if (averageCrowd > 50) {
-                        overallStatus = "Very crowded";
-                    } else if (averageCrowd > 20) {
-                        overallStatus = "Moderate crowd";
-                    } else {
-                        overallStatus = "Low crowd";
-                    }
-                }
-                logger.info("SendCrowdReports completed. Overall status: " + overallStatus);
-                
-                responseObserver.onNext(CrowdSummary
-                        .newBuilder()
-                        .setOverallStatus(overallStatus)
-                        .build());
-                responseObserver.onCompleted();
-            } //onCompleted
-        };
-                       
+        logger.info("SendCrowdReports completed. Overall status: " + status);
+
+        responseObserver.onNext(CrowdSummary
+                .newBuilder()
+                .setOverallStatus(status)
+                .build());
+        responseObserver.onCompleted();
     } //SendCrowdReports
 
 } //closes class
