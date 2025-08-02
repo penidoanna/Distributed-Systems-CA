@@ -17,7 +17,7 @@ public class AirQualityClient {
 
     public static void main(String[] args) throws Exception {
         String host = "localhost";
-        int port = 50051; //default port for gRPC
+        int port = 50052; 
 
         ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()
