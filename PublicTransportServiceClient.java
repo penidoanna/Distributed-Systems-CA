@@ -61,7 +61,6 @@ public class PublicTransportServiceClient {
              CrowdReport example1 = CrowdReport // Creating a request message.
                      .newBuilder()
                      .setStopNum("001")
-                     .setCount(10)
                      .build();
                 
                 requestObserver.onNext(example1);
@@ -70,7 +69,6 @@ public class PublicTransportServiceClient {
                 CrowdReport example2 = CrowdReport
                      .newBuilder()
                      .setStopNum("002")
-                     .setCount(50)
                      .build();
                 
                 requestObserver.onNext(example2);
@@ -79,7 +77,6 @@ public class PublicTransportServiceClient {
                 CrowdReport example3 = CrowdReport
                      .newBuilder()
                      .setStopNum("003")
-                     .setCount(2)
                      .build();
                 
                 requestObserver.onNext(example3);
