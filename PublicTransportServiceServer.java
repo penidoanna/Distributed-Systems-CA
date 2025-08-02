@@ -29,16 +29,17 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
     } //main class
   
     @Override
-    public StreamObserver<CrowdReport> sendCrowdReports(final StreamObserver<CrowdSummary> responseObserver) {
+    public StreamObserver<CrowdReport> sendCrowdReports(StreamObserver<CrowdSummary> responseObserver) {
         return new StreamObserver<CrowdReport>() {
             
             private int totalCrowdCount, reportCount = 0;
 
             @Override
             public void onNext(CrowdReport request) {
-                logger.info("Received CrowdReport from stop number: " + request.getStopNum() + ", count: " + request.getCount()); 
-                totalCrowdCount += request.getCount(); //Process each request and send a response
+                int simcount = (int)(Math.random() * 100); //random crowd count
+                totalCrowdCount += simcount; //Process each request and send a response
                 reportCount++;
+                logger.info("Received CrowdReport from stop number: " + request.getStopNum() + ", count: " + simcount); 
             }
 
             @Override
@@ -53,7 +54,7 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
                 if (reportCount == 0) {
                     overallStatus = "Nobody's there.";
                 } else {
-                    int averageCrowd = (int) totalCrowdCount / reportCount;
+                    int averageCrowd = totalCrowdCount / reportCount;
                     if (averageCrowd > 50) {
                         overallStatus = "Very crowded";
                     } else if (averageCrowd > 20) {
@@ -63,12 +64,11 @@ public class PublicTransportServiceServer extends PublicTransportServiceImplBase
                     }
                 }
                 logger.info("SendCrowdReports completed. Overall status: " + overallStatus);
-                CrowdSummary summary = CrowdSummary
+                
+                responseObserver.onNext(CrowdSummary
                         .newBuilder()
                         .setOverallStatus(overallStatus)
-                        .build();
-                
-                responseObserver.onNext(summary);
+                        .build());
                 responseObserver.onCompleted();
             } //onCompleted
         };
