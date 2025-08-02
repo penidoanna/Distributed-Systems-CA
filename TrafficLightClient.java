@@ -17,7 +17,7 @@ public class TrafficLightClient {
     
     public static void main(String[] args) throws Exception {
        String host = "localhost"; //declare host variable
-       int port = 50051; //default port for gRPC
+       int port = 50053;
        
        // First a channel is being created to the server from client.
         ManagedChannel channel = ManagedChannelBuilder
@@ -42,13 +42,14 @@ public class TrafficLightClient {
             logger.log(Level.WARNING, "RPC failed (0)", e.getStatus());           
         } finally {
             channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-        } //closes try
+        }
     } //closes main method
 
     //blocking server-streaming
     private void getLightStatus(TrafficLightServiceGrpc.TrafficLightServiceBlockingStub blockingStub) {
         logger.info("GetLightStatus request received");
         
+        final CountDownLatch finishLatch = new CountDownLatch(1);
         // First creating a request message.
         LightStatusRequest request = LightStatusRequest
                 .newBuilder()
