@@ -40,8 +40,8 @@ public class PublicTransportServiceClient {
          // Handling the stream from server using onNext (logic for handling each message in stream), onError, onCompleted (logic will be executed after the completion of stream)
          StreamObserver<CrowdReport> requestObserver = asyncStub.sendCrowdReports(new StreamObserver<CrowdSummary>() { 
             @Override
-            public void onNext(CrowdSummary report) {
-                logger.info("Crowd Report: " + report.getOverallStatus());
+            public void onNext(CrowdSummary summary) {
+                logger.info("Crowd Report: " + summary.getOverallStatus());
             }
 
             @Override
