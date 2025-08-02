@@ -149,7 +149,7 @@ public class ControllerGUI implements ActionListener {
             gui.build();
         });
     }
-
+    
     private void build() {
 
         JFrame frame = new JFrame("Service Controller Sample");
@@ -328,7 +328,6 @@ public class ControllerGUI implements ActionListener {
             CrowdReport request = CrowdReport //Send request
                     .newBuilder()
                     .setStopNum(entry3.getText())
-                    .setCount(30) //Test amount
                     .build();
             requestObserver.onNext(request);
             requestObserver.onCompleted();
