@@ -14,7 +14,7 @@ public class AirQualityServer extends AirQualityServiceImplBase {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        int port = 50051; //default port
+        int port = 50052; 
         AirQualityServer server = new AirQualityServer(); //create an instance of the server class to register it to the gRPC
 
         Server grpcServer = ServerBuilder.forPort(port) //starts building the server on the default port
