@@ -1,5 +1,7 @@
 package smartcityconnect2.airquality;
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import java.io.IOException;
@@ -7,6 +9,9 @@ import java.util.logging.Logger;
 import smartcityconnect2.airquality.AirQualityServiceGrpc.AirQualityServiceImplBase;
 import io.grpc.stub.StreamObserver;
 import java.util.logging.Level;
+import smartcityconnect2.NamingServiceGrpc;
+import smartcityconnect2.RegistrationResponse;
+import smartcityconnect2.ServiceInfo;
 
 public class AirQualityServer extends AirQualityServiceImplBase {
 
@@ -17,6 +22,8 @@ public class AirQualityServer extends AirQualityServiceImplBase {
         int port = 50052; 
         AirQualityServer server = new AirQualityServer(); //create an instance of the server class to register it to the gRPC
 
+        server.registerWithNamingService("AirQualityService", port);
+
         Server grpcServer = ServerBuilder.forPort(port) //starts building the server on the default port
                 .addService(server) //register our server implementation
                 .build() //finalizes the server
@@ -26,6 +33,27 @@ public class AirQualityServer extends AirQualityServiceImplBase {
         grpcServer.awaitTermination();
     } //main class
 
+    private void registerWithNamingService(String serviceName, int port) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50050)
+                .usePlaintext()
+                .build();
+
+        try {
+            NamingServiceGrpc.NamingServiceBlockingStub namingStub = NamingServiceGrpc.newBlockingStub(channel);
+
+            ServiceInfo request = ServiceInfo.newBuilder()
+                    .setServiceName(serviceName)
+                    .setHost("localhost")
+                    .setPort(port)
+                    .build();
+
+            RegistrationResponse response = namingStub.registerService(request);
+            logger.info("Service registration status: " + response.getSuccess());
+        } finally {
+            channel.shutdown();
+        }
+    } //registerWithNamingService
+    
     @Override
     //Method that will be automatically invoked when client is sending a AQrequest
     public StreamObserver<AQRequest> monitorAirQuality(StreamObserver<AQResponse> responseObserver) {
