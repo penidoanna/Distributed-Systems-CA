@@ -1,10 +1,15 @@
 package smartcityconnect2.traffic;
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import java.io.IOException;
 import io.grpc.stub.StreamObserver;
 import java.util.logging.Logger;
+import smartcityconnect2.NamingServiceGrpc;
+import smartcityconnect2.RegistrationResponse;
+import smartcityconnect2.ServiceInfo;
 import smartcityconnect2.traffic.TrafficLightServiceGrpc.TrafficLightServiceImplBase;
 
 public class TrafficLightServer extends TrafficLightServiceImplBase {
@@ -27,6 +32,27 @@ public class TrafficLightServer extends TrafficLightServiceImplBase {
         server.awaitTermination();  //keeps the server on awaiting requests, otherwise it would shut down
 
     } //main class
+    
+    private void registerWithNamingService(String serviceName, int port) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50050)
+                .usePlaintext()
+                .build();
+
+        try {
+            NamingServiceGrpc.NamingServiceBlockingStub namingStub = NamingServiceGrpc.newBlockingStub(channel);
+
+            ServiceInfo request = ServiceInfo.newBuilder()
+                    .setServiceName(serviceName)
+                    .setHost("localhost")
+                    .setPort(port)
+                    .build();
+
+            RegistrationResponse response = namingStub.registerService(request);
+            logger.info("Service registration status: " + response.getSuccess());
+        } finally {
+            channel.shutdown();
+        }
+    } //registerWithNamingService
 
     @Override
     //Method that will be automatically invoked when client is sending a LightStatus request
