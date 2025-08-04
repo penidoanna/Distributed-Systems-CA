@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
+import smartcityconnect2.NamingServiceGrpc;
+import smartcityconnect2.ServiceInfo;
+import smartcityconnect2.ServiceQuery;
 
 public class ControllerGUI implements ActionListener {
 
@@ -49,18 +52,34 @@ public class ControllerGUI implements ActionListener {
     public ControllerGUI() { // Initialize channels
 
         airQualityChannel = ManagedChannelBuilder
-                .forAddress("localhost", 50051)
+                .forAddress("localhost", 50052)
                 .usePlaintext()
                 .build();
         trafficLightChannel = ManagedChannelBuilder
-                .forAddress("localhost", 50051)
+                .forAddress("localhost", 50053)
                 .usePlaintext()
                 .build();
         publicTransportChannel = ManagedChannelBuilder
                 .forAddress("localhost", 50051)
                 .usePlaintext()
                 .build();
-    } //Constructor
+    }//Constructor
+
+    private ServiceInfo discoverService(String serviceName) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50050)
+                .usePlaintext()
+                .build();
+
+        NamingServiceGrpc.NamingServiceBlockingStub stub = NamingServiceGrpc.newBlockingStub(channel);
+
+        ServiceInfo serviceInfo = stub.discoverService(ServiceQuery
+                .newBuilder()
+                .setServiceName(serviceName)
+                .build()
+        );
+        channel.shutdown();
+        return serviceInfo;
+    } //discoverService
 
     private JPanel getAirQualityServiceJPanel() {
 
@@ -80,7 +99,7 @@ public class ControllerGUI implements ActionListener {
         panel.add(button);
         panel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        reply1 = new JTextField("", 10);
+        reply1 = new JTextField("", 30);
         reply1.setEditable(false);
         panel.add(reply1);
 
@@ -107,7 +126,7 @@ public class ControllerGUI implements ActionListener {
         panel.add(button);
         panel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        reply2 = new JTextField("", 10);
+        reply2 = new JTextField("", 30);
         reply2.setEditable(false);
         panel.add(reply2);
 
@@ -134,7 +153,7 @@ public class ControllerGUI implements ActionListener {
         panel.add(button);
         panel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        reply3 = new JTextField("", 10);
+        reply3 = new JTextField("", 30);
         reply3.setEditable(false);
         panel.add(reply3);
 
@@ -145,8 +164,8 @@ public class ControllerGUI implements ActionListener {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-        ControllerGUI gui = new ControllerGUI();
-        gui.build();
+            ControllerGUI gui = new ControllerGUI();
+            gui.build();
         });
     }
 
@@ -177,12 +196,12 @@ public class ControllerGUI implements ActionListener {
         // Set border for the panel
         panel.setBorder(new EmptyBorder(new Insets(50, 100, 50, 100)));
 
-        panel.add(getAirQualityServiceJPanel());            
+        panel.add(getAirQualityServiceJPanel());
         panel.add(getTrafficLightServiceJPanel());
         panel.add(getPublicTransportServiceJPanel()); //client-streaming RPC
 
         // Set size for the frame
-        frame.setSize(400, 400);
+        frame.setSize(700, 400);
 
         // Set the window to be visible as the default to be false
         frame.add(panel);
@@ -194,134 +213,227 @@ public class ControllerGUI implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         JButton button = (JButton) e.getSource();
         String label = button.getActionCommand();
-        
+
         if (label.equals("Invoke Air Quality Service")) {
-        invokeAirQualityService();
+            invokeAirQualityService();
         } else if (label.equals("Invoke Traffic Light Service")) {
-        invokeTrafficLightService();
+            invokeTrafficLightService();
         } else if (label.equals("Invoke Public Transport Service")) {
-        invokePublicTransportService();
+            invokePublicTransportService();
         }
     } //actionPerformed
-    
-        public void invokeAirQualityService(){
-            
-            System.out.println("Air Quality Service to be invoked ...");
-            SwingUtilities.invokeLater(() -> reply1.setText("Processing..."));
-            
-            try {
-                AirQualityServiceGrpc.AirQualityServiceStub asyncStub = AirQualityServiceGrpc.newStub(airQualityChannel);
-                CountDownLatch latch = new CountDownLatch(1);
-                StringBuilder result = new StringBuilder();
-                
-                StreamObserver<AQRequest> requestObserver = asyncStub.monitorAirQuality(new StreamObserver<AQResponse>() {
-                    @Override
-                    public void onNext(AQResponse response) {
-                        result.append("Air Quality Information: ").append(response.getAqi()).append(", Status: ").append(response.getStatus()).append(" ");
-                    }
-                       
-                    @Override
-                    public void onError(Throwable t) {
-                        logger.log(Level.WARNING, "Air Quality Service failed", t);
-                        SwingUtilities.invokeLater(() -> reply1.setText("Error: " + t.getMessage()));
-                        latch.countDown();
-                    }
 
-                    @Override
-                    public void onCompleted() {
-                        SwingUtilities.invokeLater(() -> reply1.setText(result.toString()));
-                        latch.countDown();
-                    }
-                });
-                
-                AQRequest request = AQRequest //Send request
-                        .newBuilder()
-                        .setZoneId(entry1.getText())
-                        .build();
-                requestObserver.onNext(request);
-                requestObserver.onCompleted();
-                
-                if(!latch.await(10, TimeUnit.SECONDS)){
-                    SwingUtilities.invokeLater(() ->reply1.setText("Timeout"));
+    public void invokeAirQualityService() {
+        String zoneId = entry1.getText().trim();
+        if (zoneId.isEmpty()) {
+            SwingUtilities.invokeLater(() -> reply1.setText("Zone Id can't be empty!"));
+            return;
+        }
+
+        logger.info("Air Quality Service to be invoked ...");
+        SwingUtilities.invokeLater(() -> reply1.setText("Processing..."));
+
+        try {
+            AirQualityServiceGrpc.AirQualityServiceStub asyncStub = AirQualityServiceGrpc.newStub(airQualityChannel);
+            CountDownLatch latch = new CountDownLatch(1);
+            StringBuilder result = new StringBuilder();
+
+            StreamObserver<AQRequest> requestObserver = asyncStub.monitorAirQuality(new StreamObserver<AQResponse>() {
+                @Override
+                public void onNext(AQResponse response) {
+                    result.append("Air Quality Information: ").append(response.getAqi()).append(", Status: ").append(response.getStatus()).append(" ");
                 }
-                
-            } catch (InterruptedException ex){
-                logger.log(Level.SEVERE, "Error invoking Air Quality Service", ex);
-                SwingUtilities.invokeLater(() -> reply1.setText("Error: " + ex.getMessage()));
-            }   
-        } //invokeAirQualityService
-                        
-            public void invokeTrafficLightService(){
-                System.out.println("Traffic Light Service to be invoked...");
-                SwingUtilities.invokeLater(() -> reply2.setText("Processing"));
-                
-                try {
-                    TrafficLightServiceGrpc.TrafficLightServiceBlockingStub blockingStub = TrafficLightServiceGrpc.newBlockingStub(trafficLightChannel);
-                    
-                    LightStatusRequest request = LightStatusRequest //Send request
-                        .newBuilder()
-                        .setIntersectionId(entry2.getText())
-                        .build();
-                
-                    LightStatusResponse response = blockingStub.getLightStatus(request);
-                    String result = "Status: " + response.getStatus() + " Direction: " + response.getDirection();
-                    SwingUtilities.invokeLater(() -> reply2.setText(result));
-                } catch (StatusRuntimeException e){
-                    logger.log(Level.WARNING, "Traffic Light Service failed", e);
-                    SwingUtilities.invokeLater(() -> reply2.setText(e.getMessage()));
-                } catch (Exception ex){
-                    logger.log(Level.SEVERE, "Error invoking Traffic Light Service", ex);
-                    SwingUtilities.invokeLater(() -> reply2.setText(ex.getMessage()));
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.log(Level.WARNING, "Air Quality Service failed", t);
+                    SwingUtilities.invokeLater(() -> reply1.setText("Error: " + t.getMessage()));
+                    latch.countDown();
                 }
-            } //invokeTrafficLightService
-            
-            public void invokePublicTransportService(){
-            
-            System.out.println("Public Transport Service to be invoked ...");
-            SwingUtilities.invokeLater(() -> reply3.setText("Processing..."));
-            
-            try {
-                PublicTransportServiceGrpc.PublicTransportServiceStub asyncStub = PublicTransportServiceGrpc.newStub(publicTransportChannel);
-                CountDownLatch latch = new CountDownLatch(1);            
-                
-                StreamObserver<CrowdReport> requestObserver = asyncStub.sendCrowdReports(new StreamObserver<CrowdSummary>() {
-                                   
-                    @Override
-                    public void onNext(CrowdSummary summary) {
-                        SwingUtilities.invokeLater(() -> reply3.setText("Status: " + summary.getOverallStatus()));
-                    }
 
-                    @Override
-                    public void onError(Throwable t) {
-                        logger.log(Level.WARNING, "Public Transport Service failed", t);
-                        SwingUtilities.invokeLater(() -> reply3.setText("Error: " + t.getMessage()));
-                        latch.countDown();
-                    }
+                @Override
+                public void onCompleted() {
+                    SwingUtilities.invokeLater(() -> reply1.setText(result.toString()));
+                    latch.countDown();
+                }
+            });
 
-                    @Override
-                    public void onCompleted() {
-                        latch.countDown();
-                    }
-                });
-                
-                CrowdReport request = CrowdReport //Send request
+            AQRequest request = AQRequest //Send request
                     .newBuilder()
-                    .setStopNum(entry3.getText())
-                    .setCount(30) //Test amount
+                    .setZoneId(entry1.getText())
                     .build();
-                requestObserver.onNext(request);
-                requestObserver.onCompleted();
-                    
-                //Waiting for a response
-                if(!latch.await(10, TimeUnit.SECONDS)){
-                    SwingUtilities.invokeLater(() ->reply3.setText("Timeout"));
+            requestObserver.onNext(request);
+            requestObserver.onCompleted();
+
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                SwingUtilities.invokeLater(() -> reply1.setText("Timeout"));
+            }
+
+        } catch (InterruptedException ex) {
+            logger.log(Level.SEVERE, "Error invoking Air Quality Service", ex);
+            SwingUtilities.invokeLater(() -> reply1.setText("Error: " + ex.getMessage()));
+        } catch (StatusRuntimeException e) {
+            logger.log(Level.WARNING, "Air Quality Service failed");
+            SwingUtilities.invokeLater(() -> reply1.setText("Server unavailable : /"));
+        }
+    } //invokeAirQualityService
+
+    public void invokeDynamicMonitoring() {
+        AirQualityServiceGrpc.AirQualityServiceStub asyncStub = AirQualityServiceGrpc.newStub(airQualityChannel);
+
+        StreamObserver<AQRequest> requestObserver = asyncStub.dynamicQualityMonitoring(new StreamObserver<AQResponse>() {
+            @Override
+            public void onNext(AQResponse response) {
+                SwingUtilities.invokeLater(() -> 
+                reply1.setText("Update: " + response.getStatus()));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                logger.log(Level.WARNING, "Invoke Dynamic Monitoring failed", t);
+                SwingUtilities.invokeLater(() -> reply1.setText("Error: " + t.getMessage()));
+            }
+            
+            @Override
+            public void onCompleted() {
+                SwingUtilities.invokeLater(() -> reply1.setText("All responses submitted successfully"));
+            }             
+        });
+        
+        // Send multiple zone requests
+        requestObserver.onNext(createRequest("Zone1"));
+        requestObserver.onNext(createRequest("Zone2"));
+        requestObserver.onCompleted();
+    }
+    
+    private AQRequest createRequest(String zoneId) {
+        return AQRequest
+                .newBuilder()
+                .setZoneId(zoneId)
+                .build();
+    }
+
+    public void invokeTrafficLightService() {
+        String intId = entry2.getText().trim();
+        if (intId.isEmpty()) {
+            SwingUtilities.invokeLater(() -> reply2.setText("Intersection Id can't be empty!"));
+            return;
+        }
+
+        logger.info("Traffic Light Service to be invoked...");
+        SwingUtilities.invokeLater(() -> reply2.setText("Processing"));
+
+        try {
+            TrafficLightServiceGrpc.TrafficLightServiceBlockingStub blockingStub = TrafficLightServiceGrpc.newBlockingStub(trafficLightChannel);
+
+            LightStatusRequest request = LightStatusRequest //Send request
+                    .newBuilder()
+                    .setIntersectionId(entry2.getText())
+                    .build();
+
+            LightStatusResponse response = blockingStub.getLightStatus(request);
+            String result = "Status: " + response.getStatus() + " Direction: " + response.getDirection();
+            SwingUtilities.invokeLater(() -> reply2.setText(result));
+        } catch (StatusRuntimeException e) {
+            logger.log(Level.WARNING, "Traffic Light Service failed", e);
+            SwingUtilities.invokeLater(() -> reply2.setText("Server unavailable : /"));
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, "Error invoking Traffic Light Service", ex);
+            SwingUtilities.invokeLater(() -> reply2.setText(ex.getMessage()));
+        }
+
+    } //invokeTrafficLightService
+
+    public void invokePublicTransportService() {
+
+        String stopNum = entry3.getText().trim();
+        if (stopNum.isEmpty()) {
+            SwingUtilities.invokeLater(() -> reply3.setText("Stop Number can't be empty!"));
+            return;
+        }
+
+        logger.info("Public Transport Service to be invoked ...");
+        SwingUtilities.invokeLater(() -> reply3.setText("Processing..."));
+
+        try {
+            PublicTransportServiceGrpc.PublicTransportServiceStub asyncStub = PublicTransportServiceGrpc.newStub(publicTransportChannel);
+            CountDownLatch latch = new CountDownLatch(1);
+
+            CrowdReport request = CrowdReport
+                    .newBuilder()
+                    .setStopNum(stopNum)
+                    .build();
+
+            asyncStub.sendCrowdReports(request, new StreamObserver<CrowdSummary>() {
+
+                @Override
+                public void onNext(CrowdSummary summary) {
+                    SwingUtilities.invokeLater(() -> reply3.setText("Status: " + summary.getOverallStatus()));
                 }
-                
-            } catch (InterruptedException ex){
-                logger.log(Level.SEVERE, "Error invoking Public Transport Service", ex);
-                SwingUtilities.invokeLater(() -> reply3.setText("Error: " + ex.getMessage()));
-            }   
-        } //invokePublicTransportService
-               
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.log(Level.WARNING, "Public Transport Service failed", t);
+                    SwingUtilities.invokeLater(() -> reply3.setText("Error: " + t.getMessage()));
+                    latch.countDown();
+                }
+
+                @Override
+                public void onCompleted() {
+                    latch.countDown();
+                }
+            });
+
+            //Waiting for a response
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                SwingUtilities.invokeLater(() -> reply3.setText("Timeout"));
+            }
+
+        } catch (InterruptedException ex) {
+            logger.log(Level.SEVERE, "Error invoking Public Transport Service", ex);
+            SwingUtilities.invokeLater(() -> reply3.setText("Error: " + ex.getMessage()));
+        } catch (StatusRuntimeException e) {
+            logger.log(Level.WARNING, "Public Transport Service failed", e);
+            SwingUtilities.invokeLater(() -> reply3.setText("Server unavailable : /"));
+        }
+    } //invokePublicTransportService
+
+    public void invokeMultiStopReport() {
+        PublicTransportServiceGrpc.PublicTransportServiceStub asyncStub = PublicTransportServiceGrpc.newStub(publicTransportChannel);
+
+        StreamObserver<CrowdReport> requestObserver = asyncStub.reportMultipleStops(new StreamObserver<CrowdSummary>() {
+
+            @Override
+            public void onNext(CrowdSummary summary) {
+                SwingUtilities.invokeLater(()
+                        -> reply3.setText("Combined Status: " + summary.getOverallStatus()));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                logger.log(Level.WARNING, "Invoke MultiStop Report failed", t);
+                SwingUtilities.invokeLater(() -> reply3.setText("Error: " + t.getMessage()));
+            }
+
+            @Override
+            public void onCompleted() {
+                SwingUtilities.invokeLater(() -> reply3.setText("All reports submitted successfully"));
+            }
+        });
+
+        requestObserver.onNext(createReport("001"));
+        requestObserver.onNext(createReport("002"));
+        requestObserver.onNext(createReport("003"));
+        requestObserver.onCompleted();
+
+    }//invokeMultiStopReport
+
+    private CrowdReport createReport(String stopNum) {
+        return CrowdReport
+                .newBuilder()
+                .setStopNum(stopNum)
+                .build();
+    }
+
 } //closes class
 
